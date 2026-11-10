@@ -19,13 +19,13 @@ create table if not exists public.orders (
 
 alter table public.orders enable row level security;
 
--- The only account allowed to see and manage orders. Change the email here if the owner account changes.
+-- The only account allowed to see and manage orders (username "admin" on the website login).
 create or replace function public.is_arisi_admin()
 returns boolean
 language sql
 stable
 as $$
-  select coalesce(auth.jwt() ->> 'email', '') = 'harshavardhanpenthala@gmail.com'
+  select coalesce(auth.jwt() ->> 'email', '') = 'admin@arisi.app'
 $$;
 
 -- Customers may only create new pending orders for tomorrow or later; they can never read, edit or delete orders.

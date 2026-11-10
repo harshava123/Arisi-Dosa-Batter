@@ -6,6 +6,7 @@ import { formatPrice } from '../../data/products'
 import { WhatsAppIcon } from '../icons/Icons'
 
 const SCREENSHOT_BUCKET = 'payment-screenshots'
+const ADMIN_EMAIL_DOMAIN = 'arisi.app'
 const STATUSES = ['pending', 'verified', 'rejected', 'completed']
 const STATUS_STYLE = {
   pending: 'bg-amber-100 text-amber-800',
@@ -38,19 +39,20 @@ function Login() {
     const form = new FormData(e.currentTarget)
     setBusy(true)
     setError('')
+    const username = form.get('username').trim().toLowerCase()
     const { error: err } = await supabase.auth.signInWithPassword({
-      email: form.get('email'),
+      email: username.includes('@') ? username : `${username}@${ADMIN_EMAIL_DOMAIN}`,
       password: form.get('password'),
     })
     setBusy(false)
-    if (err) setError(err.message)
+    if (err) setError(err.message === 'Invalid login credentials' ? 'Wrong username or password.' : err.message)
   }
 
   return (
     <section className="mx-auto max-w-md px-6">
       <PageHeader eyebrow="ARISI" title="Orders login" />
       <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl bg-cream-dark/70 p-8 ring-1 ring-sand/60">
-        <input required name="email" type="email" autoComplete="email" placeholder="Email" className={inputClass} />
+        <input required name="username" autoComplete="username" autoCapitalize="none" placeholder="Username" className={inputClass} />
         <input required name="password" type="password" autoComplete="current-password" placeholder="Password" className={inputClass} />
         {error && <p className="text-sm text-red-700">{error}</p>}
         <button disabled={busy} className="w-full rounded-full bg-brand py-3 font-medium text-cream hover:bg-brand-light disabled:opacity-60">
@@ -181,7 +183,7 @@ function Orders({ session }) {
 
   return (
     <section className="mx-auto max-w-5xl px-6">
-      <PageHeader eyebrow="ARISI" title="Orders" subtitle={`Signed in as ${session.user.email}`} />
+      <PageHeader eyebrow="ARISI" title="Orders" subtitle={`Signed in as ${session.user.email.split('@')[0]}`} />
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
         {['all', ...STATUSES].map((s) => (
