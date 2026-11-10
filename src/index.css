@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces", ui-serif, Georgia, serif;
+
+  --color-cream: #f9f2ec;
+  --color-cream-dark: #f1e7dc;
+  --color-sand: #e6d8c8;
+  --color-ink: #1d1a16;
+  --color-muted: #5b544c;
+  --color-brand: #1e3f24;
+  --color-brand-light: #2f5d36;
+  --color-leaf: #6f9a4a;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-cream font-sans text-ink antialiased;
+}
+
+.hero-fade {
+  mask-image: linear-gradient(to right, transparent 0%, #000 22%),
+    linear-gradient(to top, transparent 0%, #000 18%);
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
+}

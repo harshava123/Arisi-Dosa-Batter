@@ -1,0 +1,46 @@
+export const products = [
+  {
+    id: 'dosa',
+    name: 'Dosa Batter',
+    label: 'Dosa Batter',
+    variant: 'Stone-ground',
+    description: 'Thick, naturally fermented batter for crisp, golden dosas.',
+    price: 3,
+    weight: '500 g',
+    accent: '#c98b3a',
+  },
+  {
+    id: 'idli',
+    name: 'Idli Batter',
+    label: 'Idli Batter',
+    variant: 'Stone-ground',
+    description: 'Velvety batter that steams into soft, fluffy idlis.',
+    price: 3,
+    weight: '500 g',
+    accent: '#efe7d8',
+  },
+  {
+    id: 'dosa-chutney',
+    name: 'Dosa Batter + Instant Chutney',
+    label: 'Dosa Batter',
+    variant: 'with Chutney',
+    description: 'Dosa batter with our chutney powder. Just add hot water, stir, and the chutney is ready.',
+    price: 5,
+    weight: '500 g',
+    accent: '#c98b3a',
+    chutney: true,
+  },
+  {
+    id: 'idli-chutney',
+    name: 'Idli Batter + Instant Chutney',
+    label: 'Idli Batter',
+    variant: 'with Chutney',
+    description: 'Idli batter with our chutney powder. Just add hot water, stir, and the chutney is ready.',
+    price: 5,
+    weight: '500 g',
+    accent: '#efe7d8',
+    chutney: true,
+  },
+]
+
+export const formatPrice = (value) => `€${value.toFixed(2)}`
