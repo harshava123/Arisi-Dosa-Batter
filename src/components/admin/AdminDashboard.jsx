@@ -4,7 +4,17 @@ import { supabase } from '../../lib/supabase'
 import { formatPrice, products } from '../../data/products'
 import { SearchIcon, SproutIcon } from '../icons/Icons'
 import OrderDrawer from './OrderDrawer'
-import { SCREENSHOT_BUCKET, STATUSES, STATUS_LABEL, STATUS_STYLE, itemCount, localDate, prettyDate } from './shared'
+import {
+  SCREENSHOT_BUCKET,
+  STATUSES,
+  STATUS_LABEL,
+  STATUS_STYLE,
+  batterItems,
+  deliveryItem,
+  itemCount,
+  localDate,
+  prettyDate,
+} from './shared'
 
 const REFRESH_MS = 60_000
 
@@ -223,11 +233,13 @@ function AdminDashboard({ session }) {
                       <p className="text-xs text-muted">{o.phone}</p>
                     </td>
                     <td className="text-muted md:px-5 md:py-4">
-                      {o.items.map((i) => `${i.qty}× ${i.name.replace(' + Instant Chutney', ' + Chutney')}`).join(', ')}
+                      {batterItems(o).map((i) => `${i.qty}× ${i.name.replace(' + Instant Chutney', ' + Chutney')}`).join(', ')}
                     </td>
                     <td className="text-right md:px-5 md:py-4 md:text-left">
                       <p className={o.date === tomorrow ? 'font-semibold text-brand' : ''}>{prettyDate(o.date)}</p>
-                      <p className="text-xs text-muted">{o.method === 'pickup' ? 'Pickup · Spandau' : 'Delivery'}</p>
+                      <p className="text-xs text-muted">
+                        {o.method === 'pickup' ? 'Pickup · Spandau' : `Delivery${deliveryItem(o)?.km ? ` · ${deliveryItem(o).km} km` : ''}`}
+                      </p>
                     </td>
                     <td className="font-semibold md:px-5 md:py-4 md:text-right">{formatPrice(Number(o.total))}</td>
                     <td className="text-right md:px-5 md:py-4 md:text-left">

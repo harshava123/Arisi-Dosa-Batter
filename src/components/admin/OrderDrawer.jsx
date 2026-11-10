@@ -56,8 +56,8 @@ function OrderDrawer({ order, screenshotUrl, onClose, onStatus, busy }) {
           <section className="rounded-xl bg-white p-4 ring-1 ring-sand">
             <ul className="divide-y divide-sand/70">
               {order.items.map((i) => (
-                <li key={i.name} className="flex justify-between py-2 text-sm">
-                  <span>{i.qty} × {i.name}</span>
+                <li key={i.name} className={`flex justify-between py-2 text-sm ${i.type === 'delivery' ? 'text-muted' : ''}`}>
+                  <span>{i.type === 'delivery' ? i.name : `${i.qty} × ${i.name}`}</span>
                   <span>{formatPrice(i.qty * i.price)}</span>
                 </li>
               ))}

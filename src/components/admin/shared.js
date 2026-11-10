@@ -27,7 +27,9 @@ export const localDate = (offsetDays = 0) => {
 export const prettyDate = (iso) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
 
-export const itemCount = (order) => order.items.reduce((sum, i) => sum + i.qty, 0)
+export const batterItems = (order) => order.items.filter((i) => i.type !== 'delivery')
+export const deliveryItem = (order) => order.items.find((i) => i.type === 'delivery')
+export const itemCount = (order) => batterItems(order).reduce((sum, i) => sum + i.qty, 0)
 
 export function toWhatsAppNumber(phone) {
   let digits = phone.replace(/\D/g, '')

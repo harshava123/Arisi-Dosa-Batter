@@ -30,7 +30,8 @@ function Footer() {
           <ul className="mt-4 space-y-2 text-sm">
             <li>Pre-book 1 day ahead</li>
             <li>Order today, get it tomorrow</li>
-            <li>Pickup from Spandau</li>
+            <li>Free pickup from Spandau</li>
+            <li>Delivery €1 (up to 5 km) · €2 (5–10 km)</li>
             <li><Link to="/contact" className="hover:text-cream">Contact us</Link></li>
           </ul>
         </div>

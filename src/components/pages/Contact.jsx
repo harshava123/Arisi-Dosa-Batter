@@ -27,7 +27,7 @@ function Contact() {
           </div>
           <div>
             <h3 className="font-serif text-xl text-cream">Pickup</h3>
-            <p className="mt-2">Pick up your order from Spandau, Berlin, or have it delivered to your address.</p>
+            <p className="mt-2">Pick up your order for free from Spandau, Berlin, or get it delivered: €1 within 5 km, €2 for 5–10 km.</p>
           </div>
         </div>
 

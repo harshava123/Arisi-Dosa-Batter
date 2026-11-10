@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageHeader from '../common/PageHeader'
 import Pouch from '../common/Pouch'
@@ -6,6 +6,7 @@ import { useCart } from '../../context/CartContext'
 import { formatPrice, products } from '../../data/products'
 import { CalendarIcon, UploadIcon, WhatsAppIcon } from '../icons/Icons'
 import { supabase } from '../../lib/supabase'
+import { DELIVERY_TIERS, MAX_DELIVERY_KM, quoteDelivery } from '../../lib/delivery'
 
 const PREBOOK_DAYS = 1
 const PICKUP_AREA = 'Spandau, Berlin'
@@ -17,7 +18,9 @@ function buildWhatsAppUrl(order) {
   const lines = [
     `*New ARISI pre-order ${order.reference}*`,
     '',
-    ...order.items.map((i) => `• ${i.qty} × ${i.name} (${formatPrice(i.price * i.qty)})`),
+    ...order.items.map((i) =>
+      i.type === 'delivery' ? `• ${i.name}: ${formatPrice(i.price)}` : `• ${i.qty} × ${i.name} (${formatPrice(i.price * i.qty)})`,
+    ),
     `*Total: ${formatPrice(order.total)}*`,
     '',
     `Name: ${order.name}`,
@@ -35,6 +38,48 @@ function buildWhatsAppUrl(order) {
 const inputClass =
   'w-full rounded-xl border border-sand bg-cream px-4 py-3 text-ink placeholder:text-ink/40 focus:border-brand focus:outline-none'
 
+const tierText = DELIVERY_TIERS.map((t, i) => {
+  const range = i === 0 ? `up to ${t.maxKm} km` : `${DELIVERY_TIERS[i - 1].maxKm}–${t.maxKm} km`
+  return `${range} ${formatPrice(t.fee)}`
+}).join(' · ')
+
+function DeliveryStatus({ quote }) {
+  const box = 'rounded-xl px-4 py-3 text-sm ring-1'
+  switch (quote.state) {
+    case 'checking':
+      return <p className={`${box} bg-cream text-muted ring-sand`}>Checking distance from Spandau…</p>
+    case 'ok':
+      return (
+        <div className={`${box} bg-brand/5 ring-brand/30`}>
+          <p>
+            About <strong>{quote.km} km</strong> from Spandau: delivery <strong>{formatPrice(quote.fee)}</strong>
+          </p>
+          <p className="mt-1 text-xs text-muted">Found: {quote.label}</p>
+        </div>
+      )
+    case 'too-far':
+      return (
+        <p className={`${box} bg-red-50 text-red-800 ring-red-200`}>
+          This address is about {quote.km} km from Spandau. We only deliver within {MAX_DELIVERY_KM} km, so please choose pickup.
+        </p>
+      )
+    case 'not-found':
+      return (
+        <p className={`${box} bg-amber-50 text-amber-900 ring-amber-200`}>
+          We couldn&apos;t find this address. Please check the street name, house number and postcode.
+        </p>
+      )
+    case 'error':
+      return (
+        <p className={`${box} bg-amber-50 text-amber-900 ring-amber-200`}>
+          We couldn&apos;t check the distance right now. Please try again in a moment, or choose pickup.
+        </p>
+      )
+    default:
+      return <p className={`${box} bg-cream text-muted ring-sand`}>Enter your address above to calculate delivery ({tierText}).</p>
+  }
+}
+
 const toDateInput = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
@@ -44,6 +89,8 @@ function Order() {
     Object.fromEntries(products.map((p) => [p.id, lines.find((l) => l.product.id === p.id)?.qty ?? 0])),
   )
   const [method, setMethod] = useState('pickup')
+  const [address, setAddress] = useState('')
+  const [quote, setQuote] = useState({ state: 'idle' })
   const [screenshot, setScreenshot] = useState(null)
   const [error, setError] = useState('')
   const [status, setStatus] = useState('idle')
@@ -55,7 +102,28 @@ function Order() {
     return toDateInput(d)
   }, [])
 
-  const total = products.reduce((sum, p) => sum + p.price * qty[p.id], 0)
+  useEffect(() => {
+    const query = address.trim()
+    if (method !== 'delivery' || query.length < 6) {
+      setQuote({ state: 'idle' })
+      return
+    }
+    setQuote({ state: 'checking' })
+    const controller = new AbortController()
+    const timer = setTimeout(() => {
+      quoteDelivery(query, controller.signal)
+        .then(setQuote)
+        .catch((err) => err.name !== 'AbortError' && setQuote({ state: 'error' }))
+    }, 900)
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [method, address])
+
+  const subtotal = products.reduce((sum, p) => sum + p.price * qty[p.id], 0)
+  const deliveryFee = method === 'delivery' && quote.state === 'ok' ? quote.fee : 0
+  const total = subtotal + deliveryFee
   const itemCount = Object.values(qty).reduce((a, b) => a + b, 0)
 
   const changeQty = (id, delta) => setQty((q) => ({ ...q, [id]: Math.max(0, q[id] + delta) }))
@@ -73,6 +141,8 @@ function Order() {
     e.preventDefault()
     setError('')
     if (itemCount === 0) return setError('Please add at least one batter to your order.')
+    if (method === 'delivery' && quote.state === 'checking') return setError('Still checking your delivery distance. Please try again in a second.')
+    if (method === 'delivery' && quote.state !== 'ok') return setError('Delivery is not available for this address. Please check it or choose pickup.')
     if (!screenshot) return setError('Please upload your payment screenshot so we can verify your order.')
 
     if (!supabase) return setError('Online ordering is not configured yet. Please message us on WhatsApp.')
@@ -80,12 +150,13 @@ function Order() {
     const form = new FormData(e.currentTarget)
     const reference = `ARS-${Date.now().toString(36).toUpperCase().slice(-6)}`
     const items = products.filter((p) => qty[p.id] > 0).map((p) => ({ name: p.name, qty: qty[p.id], price: p.price }))
+    if (deliveryFee > 0) items.push({ name: `Delivery (${quote.km} km)`, qty: 1, price: deliveryFee, type: 'delivery', km: quote.km })
     const order = {
       reference,
       name: form.get('name').trim(),
       phone: form.get('phone').trim(),
       email: form.get('email').trim(),
-      address: form.get('address').trim(),
+      address: address.trim(),
       method,
       date: form.get('date'),
       notes: form.get('notes').trim() || null,
@@ -139,7 +210,7 @@ function Order() {
           </a>          <ul className="mt-6 divide-y divide-sand">
             {confirmation.items.map((i) => (
               <li key={i.name} className="flex justify-between py-3">
-                <span>{i.qty} × {i.name}</span>
+                <span>{i.type === 'delivery' ? i.name : `${i.qty} × ${i.name}`}</span>
                 <span>{formatPrice(i.qty * i.price)}</span>
               </li>
             ))}
@@ -206,12 +277,20 @@ function Order() {
               <input required name="phone" type="tel" placeholder="Phone / WhatsApp" className={inputClass} />
             </div>
             <input required name="email" type="email" placeholder="Email address" className={inputClass} />
-            <textarea required name="address" rows={2} placeholder="Your address (street, house number, postcode, city)" className={inputClass} />
+            <textarea
+              required
+              name="address"
+              rows={2}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Your address (street, house number, postcode, city)"
+              className={inputClass}
+            />
 
             <div className="flex gap-3">
               {[
-                ['pickup', `Pickup from ${PICKUP_AREA}`],
-                ['delivery', 'Delivery to my address'],
+                ['pickup', `Pickup from ${PICKUP_AREA} · free`],
+                ['delivery', `Delivery · ${formatPrice(DELIVERY_TIERS[0].fee)}–${formatPrice(DELIVERY_TIERS.at(-1).fee)}`],
               ].map(([value, label]) => (
                 <label
                   key={value}
@@ -230,6 +309,7 @@ function Order() {
                 point and time when we confirm your order.
               </p>
             )}
+            {method === 'delivery' && <DeliveryStatus quote={quote} />}
 
             <label className="block">
               <span className="mb-1.5 block text-sm text-muted">Preferred {method === 'pickup' ? 'pickup' : 'delivery'} date</span>
@@ -287,7 +367,19 @@ function Order() {
             ))}
             {itemCount === 0 && <li className="text-cream/50">No batters selected yet.</li>}
           </ul>
-          <div className="mt-6 flex justify-between border-t border-cream/20 pt-4 text-xl">
+          <div className="mt-6 space-y-2 border-t border-cream/20 pt-4 text-cream/80">
+            <p className="flex justify-between">
+              <span>Subtotal</span>
+              <span>{formatPrice(subtotal)}</span>
+            </p>
+            <p className="flex justify-between">
+              <span>{method === 'pickup' ? 'Pickup (Spandau)' : quote.state === 'ok' ? `Delivery (${quote.km} km)` : 'Delivery'}</span>
+              <span>
+                {method === 'pickup' ? 'Free' : quote.state === 'ok' ? formatPrice(quote.fee) : quote.state === 'checking' ? '…' : '–'}
+              </span>
+            </p>
+          </div>
+          <div className="mt-4 flex justify-between border-t border-cream/20 pt-4 text-xl">
             <span>Total</span>
             <span>{formatPrice(total)}</span>
           </div>
@@ -299,7 +391,7 @@ function Order() {
             {status === 'sending' ? 'Sending…' : 'Place pre-order'}
           </button>
           <p className="mt-4 text-xs leading-relaxed text-cream/60">
-            Dosa or Idli batter: {formatPrice(3)} per 500 g. With instant chutney: {formatPrice(5)}.
+            Dosa or Idli batter: {formatPrice(3)} per 500 g. With instant chutney: {formatPrice(5)}. Delivery from Spandau: {tierText}.
           </p>
         </aside>
       </form>
