@@ -350,10 +350,10 @@ function Order() {
           <fieldset className="space-y-4 rounded-2xl bg-cream-dark/70 p-6 ring-1 ring-sand/60 sm:p-8">
             <legend className="font-serif text-2xl">3. Payment &amp; verification</legend>
             <div className="rounded-xl bg-cream p-5 text-sm leading-relaxed ring-1 ring-sand">
-              <p className="font-medium">Pay {formatPrice(total)} using one of the following:</p>
+              <p className="font-medium">Pay {formatPrice(total)} by bank transfer:</p>
               <ul className="mt-2 space-y-1 text-muted">
-                <li><span className="text-ink">Bank transfer:</span> ARISI Batters · IBAN DE00 0000 0000 0000 0000 00</li>
-                <li><span className="text-ink">PayPal:</span> pay@arisi.eu</li>
+                <li><span className="text-ink">Account:</span> ARISI Batters</li>
+                <li><span className="text-ink">IBAN:</span> <span className="select-all font-mono text-ink">DE94 1001 1001 2597 9004 28</span></li>
                 <li>Please use your name as the payment reference.</li>
               </ul>
             </div>

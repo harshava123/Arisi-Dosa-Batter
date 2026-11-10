@@ -19,7 +19,7 @@ const chutneySteps = [
 
 const orderSteps = [
   { Icon: CalendarIcon, title: 'Pre-book your batter', text: 'Order at least 1 day ahead. Order today and get it tomorrow. Every batch is made fresh to order.' },
-  { Icon: UploadIcon, title: 'Pay & upload screenshot', text: 'Pay by bank transfer or PayPal, then upload a screenshot of the payment with your order.' },
+  { Icon: UploadIcon, title: 'Pay & upload screenshot', text: 'Pay by bank transfer, then upload a screenshot of the payment with your order.' },
   { Icon: LeafIcon, title: 'We verify & prepare', text: 'Once we verify your payment, we confirm your order and grind your batter fresh.' },
 ]
 
