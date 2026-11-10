@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { formatPrice } from '../../data/products'
 import { CloseIcon, WhatsAppIcon } from '../icons/Icons'
-import { STATUSES, STATUS_LABEL, STATUS_STYLE, customerMessage, prettyDate, toWhatsAppNumber } from './shared'
+import { STATUSES, STATUS_LABEL, STATUS_STYLE, customerMessage, prettyDate, prettyPhone, toWhatsAppNumber } from './shared'
 
 function Row({ label, children }) {
   return (
@@ -72,7 +72,9 @@ function OrderDrawer({ order, screenshotUrl, onClose, onStatus, busy }) {
             <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted">Customer</h3>
             <dl className="divide-y divide-sand/70">
               <Row label="Name">{order.name}</Row>
-              <Row label="Phone"><a href={`tel:${order.phone}`} className="text-brand hover:underline">{order.phone}</a></Row>
+              <Row label="Phone">
+                <a href={`tel:+${toWhatsAppNumber(order.phone)}`} className="text-brand hover:underline">{prettyPhone(order.phone)}</a>
+              </Row>
               <Row label="Email"><a href={`mailto:${order.email}`} className="text-brand hover:underline">{order.email}</a></Row>
               <Row label="Address">
                 <a

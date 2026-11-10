@@ -14,6 +14,7 @@ import {
   itemCount,
   localDate,
   prettyDate,
+  prettyPhone,
 } from './shared'
 
 const REFRESH_MS = 60_000
@@ -230,7 +231,7 @@ function AdminDashboard({ session }) {
                     </td>
                     <td className="text-right md:px-5 md:py-4 md:text-left">
                       <p className="font-medium">{o.name}</p>
-                      <p className="text-xs text-muted">{o.phone}</p>
+                      <p className="text-xs text-muted">{prettyPhone(o.phone)}</p>
                     </td>
                     <td className="text-muted md:px-5 md:py-4">
                       {batterItems(o).map((i) => `${i.qty}× ${i.name.replace(' + Instant Chutney', ' + Chutney')}`).join(', ')}

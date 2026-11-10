@@ -7,6 +7,8 @@ import { formatPrice, products } from '../../data/products'
 import { CalendarIcon, UploadIcon, WhatsAppIcon } from '../icons/Icons'
 import { supabase } from '../../lib/supabase'
 import { DELIVERY_TIERS, MAX_DELIVERY_KM, quoteDelivery } from '../../lib/delivery'
+import { DEFAULT_COUNTRY, parsePhone } from '../../lib/phone'
+import PhoneInput from '../common/PhoneInput'
 
 const PREBOOK_DAYS = 1
 const PICKUP_AREA = 'Spandau, Berlin'
@@ -24,7 +26,8 @@ function buildWhatsAppUrl(order) {
     `*Total: ${formatPrice(order.total)}*`,
     '',
     `Name: ${order.name}`,
-    `Phone: ${order.phone}`,
+    `Phone: ${order.phoneDisplay}`,
+    `Chat with customer: https://wa.me/${order.phone.slice(1)}`,
     `Email: ${order.email}`,
     `Address: ${order.address}`,
     order.method === 'pickup' ? `Pickup from ${PICKUP_AREA} on ${order.date}` : `Delivery on ${order.date}`,
@@ -90,6 +93,9 @@ function Order() {
   )
   const [method, setMethod] = useState('pickup')
   const [address, setAddress] = useState('')
+  const [phoneCountry, setPhoneCountry] = useState(DEFAULT_COUNTRY)
+  const [phone, setPhone] = useState('')
+  const [phoneTouched, setPhoneTouched] = useState(false)
   const [quote, setQuote] = useState({ state: 'idle' })
   const [screenshot, setScreenshot] = useState(null)
   const [error, setError] = useState('')
@@ -121,6 +127,9 @@ function Order() {
     }
   }, [method, address])
 
+  const parsedPhone = parsePhone(phone, phoneCountry)
+  const phoneInvalid = phoneTouched && phone.trim() !== '' && !parsedPhone
+
   const subtotal = products.reduce((sum, p) => sum + p.price * qty[p.id], 0)
   const deliveryFee = method === 'delivery' && quote.state === 'ok' ? quote.fee : 0
   const total = subtotal + deliveryFee
@@ -141,6 +150,10 @@ function Order() {
     e.preventDefault()
     setError('')
     if (itemCount === 0) return setError('Please add at least one batter to your order.')
+    if (!parsedPhone) {
+      setPhoneTouched(true)
+      return setError('Please enter a valid WhatsApp number and choose the right country code.')
+    }
     if (method === 'delivery' && quote.state === 'checking') return setError('Still checking your delivery distance. Please try again in a second.')
     if (method === 'delivery' && quote.state !== 'ok') return setError('Delivery is not available for this address. Please check it or choose pickup.')
     if (!screenshot) return setError('Please upload your payment screenshot so we can verify your order.')
@@ -154,7 +167,7 @@ function Order() {
     const order = {
       reference,
       name: form.get('name').trim(),
-      phone: form.get('phone').trim(),
+      phone: parsedPhone.number,
       email: form.get('email').trim(),
       address: address.trim(),
       method,
@@ -176,7 +189,7 @@ function Order() {
       const insert = await supabase.from('orders').insert({ ...order, screenshot_path: path })
       if (insert.error) throw insert.error
 
-      const whatsappUrl = buildWhatsAppUrl(order)
+      const whatsappUrl = buildWhatsAppUrl({ ...order, phoneDisplay: parsedPhone.formatInternational() })
 
       setConfirmation({ ...order, whatsappUrl })
       setStatus('done')
@@ -274,8 +287,24 @@ function Order() {
             <legend className="font-serif text-2xl">2. Your details</legend>
             <div className="grid gap-4 sm:grid-cols-2">
               <input required name="name" placeholder="Full name" className={inputClass} />
-              <input required name="phone" type="tel" placeholder="Phone / WhatsApp" className={inputClass} />
+              <PhoneInput
+                country={phoneCountry}
+                onCountryChange={setPhoneCountry}
+                value={phone}
+                onChange={(v) => {
+                  setPhone(v)
+                  setPhoneTouched(false)
+                }}
+                onBlur={() => setPhoneTouched(true)}
+                invalid={phoneInvalid}
+              />
             </div>
+            {phoneInvalid && (
+              <p className="-mt-2 text-sm text-red-700">
+                This doesn&apos;t look like a valid number for the selected country. Check the country code.
+              </p>
+            )}
+            {parsedPhone && <p className="-mt-2 text-xs text-muted">We&apos;ll message you on WhatsApp at {parsedPhone.formatInternational()}</p>}
             <input required name="email" type="email" placeholder="Email address" className={inputClass} />
             <textarea
               required

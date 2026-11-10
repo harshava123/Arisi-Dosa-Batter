@@ -31,12 +31,7 @@ export const batterItems = (order) => order.items.filter((i) => i.type !== 'deli
 export const deliveryItem = (order) => order.items.find((i) => i.type === 'delivery')
 export const itemCount = (order) => batterItems(order).reduce((sum, i) => sum + i.qty, 0)
 
-export function toWhatsAppNumber(phone) {
-  let digits = phone.replace(/\D/g, '')
-  if (digits.startsWith('00')) digits = digits.slice(2)
-  else if (digits.startsWith('0')) digits = `49${digits.slice(1)}`
-  return digits
-}
+export { whatsAppDigits as toWhatsAppNumber, prettyPhone } from '../../lib/phone'
 
 export function customerMessage(order) {
   const total = formatPrice(Number(order.total))
