@@ -7,12 +7,21 @@ export const MAX_DELIVERY_KM = DELIVERY_TIERS[DELIVERY_TIERS.length - 1].maxKm
 
 export const deliveryFee = (km) => DELIVERY_TIERS.find((t) => km <= t.maxKm)?.fee ?? null
 
-export function distanceKm(a, b) {
-  const rad = (d) => (d * Math.PI) / 180
-  const dLat = rad(b.lat - a.lat)
-  const dLon = rad(b.lon - a.lon)
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2
-  return 2 * 6371 * Math.asin(Math.sqrt(h))
+// Public OSRM servers (fair-use, no key). The second is only tried if the first fails.
+const ROUTERS = ['https://routing.openstreetmap.de/routed-car', 'https://router.project-osrm.org']
+
+export async function roadDistanceKm(from, to, signal) {
+  for (const base of ROUTERS) {
+    try {
+      const res = await fetch(`${base}/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=false`, { signal })
+      if (!res.ok) continue
+      const data = await res.json()
+      if (data.code === 'Ok' && data.routes?.length) return data.routes[0].distance / 1000
+    } catch (err) {
+      if (err.name === 'AbortError') throw err
+    }
+  }
+  throw new Error('Routing failed')
 }
 
 // OpenStreetMap Nominatim: free, but limited to about one request per second, so callers debounce.
@@ -40,7 +49,7 @@ export async function geocodeAddress(address, signal) {
 export async function quoteDelivery(address, signal) {
   const place = await geocodeAddress(address, signal)
   if (!place) return { state: 'not-found' }
-  const km = Math.round(distanceKm(DELIVERY_ORIGIN, place) * 10) / 10
+  const km = Math.round((await roadDistanceKm(DELIVERY_ORIGIN, place, signal)) * 10) / 10
   const fee = deliveryFee(km)
   return fee === null ? { state: 'too-far', km, label: place.label } : { state: 'ok', km, fee, label: place.label }
 }

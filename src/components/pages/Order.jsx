@@ -52,7 +52,7 @@ function DeliveryStatus({ quote }) {
       return (
         <div className={`${box} bg-brand/5 ring-brand/30`}>
           <p>
-            About <strong>{quote.km} km</strong> from Spandau: delivery <strong>{formatPrice(quote.fee)}</strong>
+            <strong>{quote.km} km</strong> by road from Spandau: delivery <strong>{formatPrice(quote.fee)}</strong>
           </p>
           <p className="mt-1 text-xs text-muted">Found: {quote.label}</p>
         </div>
@@ -60,7 +60,7 @@ function DeliveryStatus({ quote }) {
     case 'too-far':
       return (
         <p className={`${box} bg-red-50 text-red-800 ring-red-200`}>
-          This address is about {quote.km} km from Spandau. We only deliver within {MAX_DELIVERY_KM} km, so please choose pickup.
+          This address is {quote.km} km by road from Spandau. We only deliver within {MAX_DELIVERY_KM} km, so please choose pickup.
         </p>
       )
     case 'not-found':
